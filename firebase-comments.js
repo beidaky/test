@@ -1,3 +1,35 @@
+// 在postComment函数中添加详细日志
+async function postComment(commentText) {
+    console.log("开始发布评论:", commentText);
+    
+    const user = await anonymousLogin();
+    if (!commentText.trim()) {
+        alert('请输入评论内容！');
+        return;
+    }
+    
+    try {
+        console.log("用户信息:", user);
+        console.log("准备写入数据库...");
+        
+        const result = await db.collection("comments").add({
+            uid: user.uid,
+            author: `游客_${Math.random().toString(36).substr(2, 5)}`,
+            text: commentText,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            likes: 0,
+            likedBy: []
+        });
+        
+        console.log("✅ 评论发布成功，文档ID:", result.id);
+        alert('评论发布成功！');
+        
+    } catch (error) {
+        console.error("❌ 评论发布失败:", error);
+        alert('评论发布失败: ' + error.message);
+    }
+}
+
 // 调试信息
 console.log("Firebase评论系统加载中...");
 
