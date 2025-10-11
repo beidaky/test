@@ -10,7 +10,7 @@ const firebaseConfig = {
 
 console.log("=== Firebase评论系统启动 ===");
 
-// 初始化 Firebase（只执行一次）
+// 初始化 Firebase
 if (!firebase.apps.length) {
     var app = firebase.initializeApp(firebaseConfig);
 } else {
@@ -34,7 +34,7 @@ async function anonymousLogin() {
     }
 }
 
-// 发布评论（带详细日志）
+// 发布评论
 async function postComment(commentText) {
     console.log("开始发布评论:", commentText);
     
@@ -169,18 +169,40 @@ function formatTime(timestamp) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM加载完成，初始化评论系统");
     
-    // 开始监听评论
-    listenToComments();
-    
-    // 为发布按钮添加事件
+    // 详细检查所有必需的元素
     const publishBtn = document.getElementById('publishBtn');
     const commentInput = document.getElementById('messageText');
+    const commentsContainer = document.getElementById('commentsContainer');
     
-    if (publishBtn && commentInput) {
+    console.log("发布按钮:", publishBtn);
+    console.log("输入框:", commentInput);
+    console.log("评论容器:", commentsContainer);
+    
+    if (!publishBtn) {
+        console.error("❌ 错误：找不到发布按钮，请检查HTML中是否有id='publishBtn'的元素");
+    }
+    if (!commentInput) {
+        console.error("❌ 错误：找不到输入框，请检查HTML中是否有id='messageText'的元素");
+    }
+    if (!commentsContainer) {
+        console.error("❌ 错误：找不到评论容器，请检查HTML中是否有id='commentsContainer'的元素");
+    }
+    
+    // 如果所有元素都存在，才初始化功能
+    if (publishBtn && commentInput && commentsContainer) {
+        console.log("✅ 所有必需元素找到，开始初始化评论功能");
+        
+        // 开始监听评论
+        listenToComments();
+        
+        // 为发布按钮添加事件
         publishBtn.addEventListener('click', function() {
             const text = commentInput.value.trim();
             if (text) {
+                console.log("发布按钮被点击，内容:", text);
                 postComment(text);
+            } else {
+                console.log("发布按钮被点击，但输入为空");
             }
         });
         
@@ -190,14 +212,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const text = commentInput.value.trim();
                 if (text) {
+                    console.log("回车键发布，内容:", text);
                     postComment(text);
                 }
             }
         });
+        
+        // 初始匿名登录
+        anonymousLogin();
     } else {
-        console.error("找不到发布按钮或输入框");
+        console.error("❌ 评论系统初始化失败：缺少必需元素");
     }
-    
-    // 初始匿名登录
-    anonymousLogin();
 });
