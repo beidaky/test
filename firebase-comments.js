@@ -1,63 +1,26 @@
-// 在postComment函数中添加详细日志
-async function postComment(commentText) {
-    console.log("开始发布评论:", commentText);
-    
-    const user = await anonymousLogin();
-    if (!commentText.trim()) {
-        alert('请输入评论内容！');
-        return;
-    }
-    
-    try {
-        console.log("用户信息:", user);
-        console.log("准备写入数据库...");
-        
-        const result = await db.collection("comments").add({
-            uid: user.uid,
-            author: `游客_${Math.random().toString(36).substr(2, 5)}`,
-            text: commentText,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            likes: 0,
-            likedBy: []
-        });
-        
-        console.log("✅ 评论发布成功，文档ID:", result.id);
-        alert('评论发布成功！');
-        
-    } catch (error) {
-        console.error("❌ 评论发布失败:", error);
-        alert('评论发布失败: ' + error.message);
-    }
-}
-
-// 调试信息
-console.log("Firebase评论系统加载中...");
-
-// 您的firebaseConfig代码...
-
-// 检查初始化状态
-firebase.initializeApp(firebaseConfig);
-console.log("Firebase初始化完成");
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-console.log("Firestore数据库连接建立");
-
-// Firebase配置（从控制台获取并替换这些值）
+// Firebase配置
 const firebaseConfig = {
-  apiKey: "AIzaSyAX7Rku_UDyLPKgYayNwVlHSjJgVnnfvzw",
-  authDomain: "guestbook-60225.firebaseapp.com",
-  projectId: "guestbook-60225",
-  storageBucket: "guestbook-60225.firebasestorage.app",
-  messagingSenderId: "891655640133",
-  appId: "1:891655640133:web:a884de075f6f84f8fc3f2c"
+    apiKey: "AIzaSyAX7Rku_UDyLPKgYayNwVlHSjJgVnnfvzw",
+    authDomain: "guestbook-60225.firebaseapp.com",
+    projectId: "guestbook-60225",
+    storageBucket: "guestbook-60225.firebasestorage.app",
+    messagingSenderId: "891655640133",
+    appId: "1:891655640133:web:a884de075f6f84f8fc3f2c"
 };
 
-// 初始化 Firebase（不初始化Storage）
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-// 注意：我们没有初始化 storage
+console.log("=== Firebase评论系统启动 ===");
+
+// 初始化 Firebase（只执行一次）
+if (!firebase.apps.length) {
+    var app = firebase.initializeApp(firebaseConfig);
+} else {
+    var app = firebase.app();
+}
+
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+console.log("Firebase初始化完成");
 
 // 匿名登录函数
 async function anonymousLogin() {
@@ -67,39 +30,54 @@ async function anonymousLogin() {
         return userCredential.user;
     } catch (error) {
         console.error("匿名登录失败:", error);
+        return null;
     }
 }
 
-// 页面加载时自动匿名登录
-document.addEventListener('DOMContentLoaded', function() {
-    anonymousLogin();
-});
-
-// 发布评论
+// 发布评论（带详细日志）
 async function postComment(commentText) {
+    console.log("开始发布评论:", commentText);
+    
     const user = await anonymousLogin();
+    if (!user) {
+        alert('登录失败，无法发布评论');
+        return;
+    }
+    
     if (!commentText.trim()) {
         alert('请输入评论内容！');
         return;
     }
     
     try {
-        await db.collection("comments").add({
+        console.log("用户信息:", user.uid);
+        console.log("准备写入数据库...");
+        
+        const commentData = {
             uid: user.uid,
             author: `游客_${Math.random().toString(36).substr(2, 5)}`,
             text: commentText,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             likes: 0,
             likedBy: []
-        });
-        console.log("评论发布成功！");
+        };
+        
+        console.log("评论数据:", commentData);
+        
+        const result = await db.collection("comments").add(commentData);
+        console.log("✅ 评论发布成功，文档ID:", result.id);
+        
+        // 清空输入框
+        document.getElementById('messageText').value = '';
+        
     } catch (error) {
-        console.error("发布评论失败:", error);
-        alert('发布评论失败，请重试！');
+        console.error("❌ 评论发布失败:", error);
+        console.error("错误详情:", error.code, error.message);
+        alert('评论发布失败: ' + error.message);
     }
 }
 
-// 点赞/取消点赞评论
+// 点赞评论
 async function likeComment(commentId) {
     const user = await anonymousLogin();
     if (!user) return;
@@ -114,13 +92,11 @@ async function likeComment(commentId) {
         const commentData = commentDoc.data();
         
         if (commentData.likedBy.includes(userId)) {
-            // 已点赞，取消点赞
             await commentRef.update({
                 likes: firebase.firestore.FieldValue.increment(-1),
                 likedBy: firebase.firestore.FieldValue.arrayRemove(userId)
             });
         } else {
-            // 未点赞，添加点赞
             await commentRef.update({
                 likes: firebase.firestore.FieldValue.increment(1),
                 likedBy: firebase.firestore.FieldValue.arrayUnion(userId)
@@ -133,11 +109,18 @@ async function likeComment(commentId) {
 
 // 实时监听并显示评论
 function listenToComments() {
+    console.log("开始监听评论...");
+    
     db.collection("comments")
         .orderBy("timestamp", "desc")
         .onSnapshot((snapshot) => {
+            console.log("收到评论更新，文档数量:", snapshot.size);
+            
             const commentsContainer = document.getElementById('commentsContainer');
-            if (!commentsContainer) return;
+            if (!commentsContainer) {
+                console.error("找不到commentsContainer元素");
+                return;
+            }
             
             commentsContainer.innerHTML = '';
             
@@ -148,6 +131,8 @@ function listenToComments() {
             
             snapshot.forEach((doc) => {
                 const comment = doc.data();
+                console.log("显示评论:", comment);
+                
                 const commentElement = document.createElement('div');
                 commentElement.className = 'comment-item';
                 commentElement.innerHTML = `
@@ -164,39 +149,55 @@ function listenToComments() {
                 `;
                 commentsContainer.appendChild(commentElement);
             });
+        }, (error) => {
+            console.error("监听评论失败:", error);
         });
 }
 
 // 格式化时间显示
 function formatTime(timestamp) {
-    if (!timestamp) return '';
-    const date = timestamp.toDate();
-    return date.toLocaleString('zh-CN');
+    if (!timestamp) return '时间未知';
+    try {
+        const date = timestamp.toDate();
+        return date.toLocaleString('zh-CN');
+    } catch (error) {
+        return '时间格式错误';
+    }
 }
 
-// 页面加载完成后开始监听评论
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM加载完成，初始化评论系统");
+    
+    // 开始监听评论
     listenToComments();
-});
-
-// 为发布按钮添加事件监听（假设您的HTML中有id为publishBtn的按钮）
-document.addEventListener('DOMContentLoaded', function() {
+    
+    // 为发布按钮添加事件
     const publishBtn = document.getElementById('publishBtn');
     const commentInput = document.getElementById('messageText');
     
     if (publishBtn && commentInput) {
         publishBtn.addEventListener('click', function() {
-            postComment(commentInput.value);
-            commentInput.value = ''; // 清空输入框
+            const text = commentInput.value.trim();
+            if (text) {
+                postComment(text);
+            }
         });
         
-        // 按回车键也可以发布
+        // 回车键发布
         commentInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                postComment(commentInput.value);
-                commentInput.value = '';
+                const text = commentInput.value.trim();
+                if (text) {
+                    postComment(text);
+                }
             }
         });
+    } else {
+        console.error("找不到发布按钮或输入框");
     }
+    
+    // 初始匿名登录
+    anonymousLogin();
 });
