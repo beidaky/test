@@ -1,11 +1,11 @@
 // Firebase配置（从控制台获取并替换这些值）
 const firebaseConfig = {
-    apiKey: "你的apiKey",
-    authDomain: "你的项目.firebaseapp.com",
-    projectId: "你的项目ID",
-    storageBucket: "你的项目.appspot.com", // 即使不用，配置中可能仍有此项
-    messagingSenderId: "你的messagingSenderId",
-    appId: "你的appId"
+  apiKey: "AIzaSyAX7Rku_UDyLPKgYayNwVlHSjJgVnnfvzw",
+  authDomain: "guestbook-60225.firebaseapp.com",
+  projectId: "guestbook-60225",
+  storageBucket: "guestbook-60225.firebasestorage.app",
+  messagingSenderId: "891655640133",
+  appId: "1:891655640133:web:a884de075f6f84f8fc3f2c"
 };
 
 // 初始化 Firebase（不初始化Storage）
