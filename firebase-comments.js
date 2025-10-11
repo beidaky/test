@@ -1,3 +1,16 @@
+// 调试信息
+console.log("Firebase评论系统加载中...");
+
+// 您的firebaseConfig代码...
+
+// 检查初始化状态
+firebase.initializeApp(firebaseConfig);
+console.log("Firebase初始化完成");
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+console.log("Firestore数据库连接建立");
+
 // Firebase配置（从控制台获取并替换这些值）
 const firebaseConfig = {
   apiKey: "AIzaSyAX7Rku_UDyLPKgYayNwVlHSjJgVnnfvzw",
